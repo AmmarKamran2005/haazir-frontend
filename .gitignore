@@ -1,0 +1,23 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.env*.local
+
+# Secrets. `.env.local` holds the API base URL and would hold anything else added later;
+# `.env.example` documents the keys with no values.
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Playwright / local capture
+_screenshots/
+tmp/
