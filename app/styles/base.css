@@ -23,14 +23,18 @@
      which has a text equivalent elsewhere. Never put a fact in it. */
   --ink-4:      #8D8571;
 
-  /* ── instrument ── */
-  --panel:      #14120D;
-  --panel-2:    #1E1B14;
-  --panel-3:    #292519;
-  --panel-rule: #332E21;
-  --panel-tx:   #EDE6D3;
-  --panel-tx-2: #A79E88;
-  --panel-tx-3: #8A8270;   /* 4.96:1 on the instrument face; was 4.01 */
+  /* ── instrument ──
+     Light in the light theme. These were dark in both themes: a black instrument face reads
+     well on a laptop and washes out on a projector, and the city map and the live panel are
+     exactly the two surfaces a judge is asked to read numbers off. The dark theme keeps its
+     original values further down. */
+  --panel:      #FBF7EE;
+  --panel-2:    #F3EDE0;
+  --panel-3:    #E9E1D0;
+  --panel-rule: #DED5C2;
+  --panel-tx:   #17150F;
+  --panel-tx-2: #57503F;
+  --panel-tx-3: #6F6757;
 
   /* ── one accent, three signals, one measurement colour ── */
   --saffron:    #A9530B;
@@ -55,10 +59,12 @@
   --teal-md:    #86BAD0;
 
   /* signal colours on the instrument face need to be lighter */
-  --p-jade:  #4FCE9B;
-  --p-amber: #E5A946;
-  --p-verm:  #F0776A;
-  --p-teal:  #62BEE2;
+  /* Tuned for a dark face; on the light one they are washed out, so the light theme uses the
+     same hues at ink weight. The dark theme restores the bright set. */
+  --p-jade:  #157F53;
+  --p-amber: #A9660B;
+  --p-verm:  #B33B2C;
+  --p-teal:  #1D6E8E;
   --p-saf:   #F0A34E;
 
   /* ── type ── */
@@ -100,6 +106,16 @@
   --panel-2:    #17140F;
   --panel-3:    #221E16;
   --panel-rule: #2E291F;
+  /* Restored here because the light theme now owns the light instrument face. Without these
+     the dark panel inherited the light theme's dark text and every number on the city map
+     and the live panel became invisible. */
+  --panel-tx:   #EDE6D3;
+  --panel-tx-2: #A79E88;
+  --panel-tx-3: #8A8270;
+  --p-jade:  #4FCE9B;
+  --p-amber: #E5A946;
+  --p-verm:  #F0776A;
+  --p-teal:  #62BEE2;
 
   --saffron:    #E7A051;  --saffron-lo: #3A2508; --saffron-md: #7A5219;
   --jade:       #58D3A2;  --jade-lo:    #0D2E22; --jade-md:    #21684C;
@@ -134,6 +150,16 @@
   --panel-2:    #17140F;
   --panel-3:    #221E16;
   --panel-rule: #2E291F;
+  /* Restored here because the light theme now owns the light instrument face. Without these
+     the dark panel inherited the light theme's dark text and every number on the city map
+     and the live panel became invisible. */
+  --panel-tx:   #EDE6D3;
+  --panel-tx-2: #A79E88;
+  --panel-tx-3: #8A8270;
+  --p-jade:  #4FCE9B;
+  --p-amber: #E5A946;
+  --p-verm:  #F0776A;
+  --p-teal:  #62BEE2;
 
   --saffron:    #E7A051;  --saffron-lo: #3A2508; --saffron-md: #7A5219;
   --jade:       #58D3A2;  --jade-lo:    #0D2E22; --jade-md:    #21684C;
