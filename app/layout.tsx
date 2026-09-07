@@ -24,7 +24,13 @@ export const viewport: Viewport = {
 
 /* Blocking theme bootstrap — must run before first paint so there is no
    flash. Never clobber a theme the host already stamped on <html>. */
-const THEME_BOOTSTRAP = `try{if(!document.documentElement.dataset.theme){var t=localStorage.getItem('hz-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark';}}catch(e){}`;
+/* Light unless the person has chosen dark here before.
+ *
+ * It used to follow the OS setting, which meant a judge whose laptop is in dark mode saw the
+ * dark theme on a projector — where it washes out and the small print on the live panel stops
+ * being readable. The toggle in the top bar still works and is still remembered; only the
+ * default changed. */
+const THEME_BOOTSTRAP = `try{if(!document.documentElement.dataset.theme){var t=localStorage.getItem('hz-theme');document.documentElement.dataset.theme=t||'light';}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
