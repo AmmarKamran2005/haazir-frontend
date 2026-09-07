@@ -1,5 +1,7 @@
 # HAAZIR — web
 
+*ForkSight AI — AI Hackathon Pakistan 2026. HAAZIR is the product.*
+
 **One of two repositories.** The web app is here; the FastAPI backend is at
 <https://github.com/AmmarKamran2005/haazir-backend>. Running:
 <https://haazir-frontend.vercel.app>, against <https://haazir-backend.fly.dev>.
