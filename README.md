@@ -1,8 +1,11 @@
 # HAAZIR — web
 
+**One of two repositories.** The web app is here; the FastAPI backend is at
+<https://github.com/AmmarKamran2005/haazir-backend>. Running:
+<https://haazir-frontend.vercel.app>, against <https://haazir-backend.fly.dev>.
+
 Next.js 15 (App Router) + React 19. The five surfaces from the prototype, running against the
-real API in [`../api`](../api/) or against an in-process mock, decided by one environment
-variable.
+real API or against an in-process mock, decided by one environment variable.
 
 ---
 
@@ -16,10 +19,11 @@ npm run dev
 Open <http://localhost:3000>. With no `.env.local` this is the **mock**: the prototype engine
 runs in the browser, no backend and no network required.
 
-To run against the real API, start it first (from the repo root):
+To run against the real API, start it first — from a clone of the
+[backend repo](https://github.com/AmmarKamran2005/haazir-backend), following its README:
 
 ```bash
-api/.venv/Scripts/python.exe -m uvicorn haazir.main:app --app-dir api/src --port 8000
+.venv/Scripts/python.exe -m uvicorn haazir.main:app --app-dir src --port 8000
 ```
 
 then create `web/.env.local`:
@@ -28,10 +32,8 @@ then create `web/.env.local`:
 NEXT_PUBLIC_HAAZIR_API=http://localhost:8000
 ```
 
-`CORS_ORIGINS` in `api/.env` already allows `http://localhost:3000`. Restart `next dev` after
+`CORS_ORIGINS` in the API's `.env` already allows `http://localhost:3000`. Restart `next dev` after
 changing `.env.local` — Next reads it at boot.
-
-There is also `.claude/launch.json` at the repo root with both servers configured.
 
 ---
 
