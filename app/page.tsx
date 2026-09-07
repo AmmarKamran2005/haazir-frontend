@@ -79,17 +79,9 @@ export default function AskPage() {
               <Icon name="mic" />
             </button>
           )}
-          <button
-            className="askbar__ic"
-            type="button"
-            aria-label={t('ask.byPhoto')}
-            onClick={() => toast(
-              'Menu OCR (PaddleOCR → Claude normalisation) extracts dishes, flags allergens from the dish graph and ranks them against your palate. Stubbed in this build.',
-              'camera',
-            )}
-          >
-            <Icon name="camera" />
-          </button>
+          {/* The menu-OCR button was here. It opened a toast explaining it was not built,
+              which is honest but is still a control that does nothing — and on the one screen
+              a judge tries things on. Removed rather than explained. */}
           <button className="askbar__go" type="submit" aria-label={t('ask.search')}>
             <Icon name="arrowr" />
           </button>
