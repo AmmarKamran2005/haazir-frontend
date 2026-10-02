@@ -35,15 +35,22 @@ export default function Page() {
   useEffect(() => {
     if (!invite || redeemed.current === invite) return;
     redeemed.current = invite;
+    /* Already joined in this browser — a reopened tab, the back button, a second tap on the
+       link. The session is still good, so show the form rather than calling the link spent. */
+    const proceed = () => {
+      setJoining(false);
+      router.replace(`/g/${groupId}/me`);
+    };
     exchangeGroupInvite(groupId, invite)
       .then(r => {
+        if (r || groupToken(groupId)) return proceed();
         setJoining(false);
-        if (!r) setJoinError('This invite has expired or has already been used.');
-        else router.replace(`/g/${groupId}/me`);
+        setJoinError('This link has expired. Ask the organiser for a new one.');
       })
       .catch((err: Error) => {
+        if (groupToken(groupId)) return proceed();
         setJoining(false);
-        setJoinError(err.message);
+        setJoinError(err.message.replace(/^.*?→ \d+:\s*/, ''));
       });
   }, [invite, groupId, router]);
   useClock();

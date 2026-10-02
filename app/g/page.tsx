@@ -122,8 +122,8 @@ export default function NewGroupPage() {
         ) : (
           <>
             <p style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--ink-2)' }}>
-              Send one link to each person. A link works once and only opens that person&apos;s
-              own slot — the organiser cannot read the answers either, only how many have come
+              Send one link to each person. A link keeps working until that person has answered, and only opens
+              their own slot — the organiser cannot read the answers either, only how many have come
               back.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 'var(--sp-4)' }}>
