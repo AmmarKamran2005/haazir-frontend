@@ -58,6 +58,13 @@ function GroupSolved() {
             </div>
           </div>
         </div>
+        {!loading && (
+          <div className="ask">
+            <Link href={'/g/' + groupId} className="btn btn--primary btn--full">
+              Back to the group
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -70,8 +77,10 @@ function GroupSolved() {
   const rivalNote = sol.runnerUp
     ? 'Chosen over ' + sol.runnerUp.venue.name + ' because ' +
       (sol.runnerUp.fuse.wait > f.wait + 6
-        ? 'its ' + Math.round(sol.runnerUp.fuse.wait) + '-minute wait pushed two members past their stated time limit'
-        : 'its lowest individual satisfaction was ' + Math.round(sol.runnerUp.minSat * 100) + '%, below this one\'s ' + Math.round(minU * 100) + '%') + '.'
+        ? 'its wait is about ' + Math.round(sol.runnerUp.fuse.wait) + ' minutes'
+        : Math.round(sol.runnerUp.minSat * 100) < Math.round(minU * 100)
+          ? 'its least happy member would be at ' + Math.round(sol.runnerUp.minSat * 100) + '%, against ' + Math.round(minU * 100) + '% here'
+          : 'it scored slightly lower for the group as a whole') + '.'
     : '';
 
   const handleSolveAgain = () => setAgain(n => n + 1);
@@ -80,12 +89,12 @@ function GroupSolved() {
     <div className="app__scroll scroll">
       <h1 className="sr">{t('group.solved')}</h1>
       <div className="ahead">
-        <Link href={'/g/' + groupId + '/me'} className="ahead__back" aria-label="Back"><Icon name="arrowl" /></Link>
+        <Link href={'/g/' + groupId} className="ahead__back" aria-label="Back to the group"><Icon name="arrowl" /></Link>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="ahead__t">{t('group.solved')}</div>
           <div className="ahead__s">
-            {sol.total ? `${sol.responded} of ${sol.total} members` : `${sol.responded} members`}
-            {' · max-min fairness'}
+            {sol.total ? `${sol.responded} of ${sol.total} answered` : `${sol.responded} answered`}
+            {' · fair to the least happy person'}
           </div>
         </div>
       </div>
@@ -121,8 +130,8 @@ function GroupSolved() {
                 ))}
               </div>
               <p style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 9, lineHeight: 1.5 }}>
-                We maximise the <b style={{ color: 'var(--ink-2)' }}>minimum</b>, not the mean. A solution where five people score 95% and one scores 30%
-                is worse than one where everybody scores 74% — because the person at 30% is the one who stops coming.
+                The least happy person counts the most, not the average. A plan where five people score 95% and one scores 30%
+                loses to one where everybody scores 74% — because the person at 30% is the one who stops coming.
               </p>
             </div>
 
@@ -175,9 +184,9 @@ function GroupSolved() {
             </div>
 
             <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn btn--primary" type="button" style={{ flex: 1 }}>Book for {sol.responded}</button>
+              <Link href={'/v/' + v.id} className="btn btn--primary" style={{ flex: 1, textAlign: 'center' }}>Open {v.name}</Link>
               <button className="btn" type="button" onClick={handleSolveAgain}>{t('group.solveAgain')}</button>
-              <Link href={'/v/' + v.id} className="btn">Truth card</Link>
+              <Link href={'/g/' + groupId} className="btn">Back to group</Link>
             </div>
           </div>
         </div>

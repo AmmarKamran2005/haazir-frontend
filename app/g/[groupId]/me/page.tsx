@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  submitConstraint, solveGroupFor, exchangeGroupInvite, groupStatus, groupToken, USE_REAL_API,
+  submitConstraint, exchangeGroupInvite, groupStatus, groupToken, groupSlot, myGroupConstraint,
+  USE_REAL_API,
 } from '@/lib/api';
+import { rememberGroup } from '@/lib/groups';
 import { useToast } from '@/components/chrome/Toasts';
 import { rs } from '@/lib/format';
 import { Icon } from '@/components/primitives/Icon';
@@ -23,71 +25,69 @@ export default function Page() {
   const router = useRouter();
   const groupId = (params?.groupId as string) || '';
 
-  /* The `?t=` on an invite link is redeemed once, for a guest session scoped to this group
-     and this member's slot. Redeeming it here rather than on a separate landing page means
-     the link a person was sent opens the form they were asked to fill in — which is the
-     whole point of sending them a link. */
+  /* Old per-person invite links (`?t=`) still work: redeem, then show the form. If one is
+     spent or broken, the lobby is where to go — pick your name there. */
   const invite = search?.get('t') ?? null;
   const redeemed = useRef<string | null>(null);
   const [joining, setJoining] = useState(Boolean(invite));
-  const [joinError, setJoinError] = useState<string | null>(null);
+  useClock();
+  const { t } = useI18n();
+  const toast = useToast();
 
   useEffect(() => {
     if (!invite || redeemed.current === invite) return;
     redeemed.current = invite;
-    /* Already joined in this browser — a reopened tab, the back button, a second tap on the
-       link. The session is still good, so show the form rather than calling the link spent. */
-    const proceed = () => {
-      setJoining(false);
-      router.replace(`/g/${groupId}/me`);
+    const toForm = () => { setJoining(false); router.replace(`/g/${groupId}/me`); };
+    const toLobby = () => {
+      toast('That link was already used. Tap your name in the group instead.', 'link');
+      router.replace(`/g/${groupId}`);
     };
     exchangeGroupInvite(groupId, invite)
-      .then(r => {
-        if (r || groupToken(groupId)) return proceed();
-        setJoining(false);
-        setJoinError('This link has expired. Ask the organiser for a new one.');
-      })
-      .catch((err: Error) => {
-        if (groupToken(groupId)) return proceed();
-        setJoining(false);
-        setJoinError(err.message.replace(/^.*?→ \d+:\s*/, ''));
-      });
-  }, [invite, groupId, router]);
-  useClock();
-  const { t } = useI18n();
-  const toast = useToast();
+      .then(r => (r || groupToken(groupId) ? toForm() : toLobby()))
+      .catch(() => (groupToken(groupId) ? toForm() : toLobby()));
+  }, [invite, groupId, router, toast]);
 
   const [budget, setBudget] = useState(2400);
   const [maxTravel, setMaxTravel] = useState(25);
   const [mood, setMood] = useState('spicy');
   const [diet, setDiet] = useState<string[]>([]);
-
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /* null until the browser has been asked. The guest session lives in localStorage, which the
-     server render cannot see, so deciding earlier would flash the wrong screen. */
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
-  const [total, setTotal] = useState(0);
+  const [who, setWho] = useState<string>('');
 
+  /* No session for this group in this browser: the lobby is where you say who you are. */
   useEffect(() => {
     if (joining) return;
-    setHasSession(!USE_REAL_API || Boolean(groupToken(groupId)));
-    groupStatus(groupId).then(s => setTotal(s.total)).catch(() => setTotal(0));
-  }, [groupId, joining]);
+    if (USE_REAL_API && !groupToken(groupId)) {
+      router.replace(`/g/${groupId}`);
+      return;
+    }
+    const slot = groupSlot(groupId);
+    groupStatus(groupId)
+      .then(s => {
+        rememberGroup(groupId, s.title);
+        const m = s.members.find(x => Number(x.id) === slot);
+        if (m) setWho(m.name);
+      })
+      .catch(() => undefined);
+    // Editing: start from what you said last time.
+    myGroupConstraint(groupId)
+      .then(c => {
+        if (!c) return;
+        setBudget(c.budget ?? 2400);
+        setMaxTravel(c.maxTravel ?? 25);
+        setMood(c.mood ?? 'anything');
+        setDiet(c.diet ?? []);
+      })
+      .catch(() => undefined);
+  }, [groupId, joining, router]);
 
   const toggleDiet = useCallback((d: string) => {
     setDiet(prev => prev.indexOf(d) >= 0 ? prev.filter(x => x !== d) : [...prev, d]);
   }, []);
 
-  /* Await the submit before navigating. The solved page reads the solution, and against a
-     real API navigating first is a race it loses often enough to matter. The solve itself is
-     not awaited: the solved page asks for it again on arrival, and blocking the button on a
-     second round trip buys nothing.
-
-     A failed submit has to say so. This used to be an unguarded await: a 401 from the API
-     (no guest session for this group) became an unhandled rejection, nothing on screen
-     changed, and the button read as broken. */
-  const handleSolve = useCallback(async () => {
+  /* Save, then go back to the group: that is where everyone's progress and the result are. */
+  const handleSave = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
@@ -95,52 +95,26 @@ export default function Page() {
       await submitConstraint(groupId, DEMO_MEMBER, { budget, maxTravel, mood, diet });
     } catch (err) {
       const msg = (err as { status?: number })?.status === 401
-        ? 'Your link for this group has expired or was never opened. Open the personal link you were sent.'
-        : err instanceof Error ? err.message : 'Could not send your answers.';
+        ? 'Your session for this group has ended. Go back to the group and tap your name again.'
+        : err instanceof Error ? err.message.replace(/^.*?→ \d+:\s*/, '') : 'Could not save your answer.';
       setError(msg);
       toast(msg, 'alert');
       setBusy(false);
       return;
     }
-    void solveGroupFor(groupId, DEMO_MEMBER).catch(() => undefined);
-    router.push('/g/' + groupId + '/solved');
+    toast('Saved. Only you can see what you answered.', 'check');
+    router.push(`/g/${groupId}`);
   }, [busy, budget, maxTravel, mood, diet, groupId, router, toast]);
 
-  if (joining || joinError) {
+  if (joining) {
     return (
       <div className="app__scroll scroll">
         <div className="ahead">
           <Link href={'/g/' + groupId} className="ahead__back" aria-label="Back"><Icon name="arrowl" /></Link>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="ahead__t">{joining ? 'Joining…' : 'Invite not valid'}</div>
-            <div className="ahead__s">
-              {joining ? 'Redeeming your invite.' : joinError}
-            </div>
+            <div className="ahead__t">Opening…</div>
+            <div className="ahead__s">Getting your answer sheet.</div>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasSession === false) {
-    return (
-      <div className="app__scroll scroll">
-        <div className="ahead">
-          <Link href="/g" className="ahead__back" aria-label="Back"><Icon name="arrowl" /></Link>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="ahead__t">Open your own link</div>
-            <div className="ahead__s">This group has no answer slot for this browser.</div>
-          </div>
-        </div>
-        <div className="ask">
-          <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ink-2)' }}>
-            Each person answers through a private link, so nobody can fill in for someone else.
-            Open the link the organiser sent you, or start a new group and use the links it
-            gives you.
-          </p>
-          <Link href="/g" className="btn btn--primary btn--full" style={{ marginTop: 'var(--sp-4)' }}>
-            Create a group
-          </Link>
         </div>
       </div>
     );
@@ -152,7 +126,7 @@ export default function Page() {
       <div className="ahead">
         <Link href={'/g/' + groupId} className="ahead__back" aria-label="Back"><Icon name="arrowl" /></Link>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="ahead__t">{t('group.mine')}</div>
+          <div className="ahead__t">{who ? `Your answer, ${who}` : t('group.mine')}</div>
           <div className="ahead__s">{t('group.private')}</div>
         </div>
       </div>
@@ -222,8 +196,8 @@ export default function Page() {
           </div>
         )}
         <button className="btn btn--primary btn--full" type="button" disabled={busy}
-          style={{ marginTop: 'var(--sp-4)' }} onClick={handleSolve}>
-          {busy ? 'Sending…' : total > 0 ? `Submit & solve for ${total}` : 'Submit & solve'}
+          style={{ marginTop: 'var(--sp-4)' }} onClick={handleSave}>
+          {busy ? 'Saving…' : 'Save my answer'}
         </button>
       </div>
     </div>

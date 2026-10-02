@@ -20,7 +20,7 @@ import type { AuthUser } from './mock/handlers';
 
 export { USE_REAL_API, API_BASE, ApiError } from './api/config';
 export { getAccessToken, setAccessToken, getDeviceToken, setDeviceToken } from './api/http';
-export { issueDevice, enrolDevice, createGroup, exchangeGroupInvite, groupToken } from './api/rest';
+export { issueDevice, enrolDevice, createGroup, exchangeGroupInvite, groupToken, groupSlot } from './api/rest';
 export { venueCard } from './api/rest';
 export { neutralFuse } from './api/adapt';
 
@@ -64,6 +64,13 @@ export const cityState = () =>
 
 export const groupStatus = (groupId: string) =>
   USE_REAL_API ? rest.groupStatus(groupId) : ready(mock.groupStatus(groupId));
+
+/* The mock has one demo group and no auth, so joining is a no-op there. */
+export const joinGroup = (groupId: string, slot: number) =>
+  USE_REAL_API ? rest.joinGroup(groupId, slot) : ready({ access_token: '', slot, group_id: groupId, name: '' });
+
+export const myGroupConstraint = (groupId: string) =>
+  USE_REAL_API ? rest.myGroupConstraint(groupId) : ready(null as GroupConstraint | null);
 
 export const submitConstraint = (groupId: string, memberId: string, c: GroupConstraint) =>
   USE_REAL_API ? rest.submitConstraint(groupId, c) : ready(mock.submitConstraint(memberId, c));

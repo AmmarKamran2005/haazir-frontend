@@ -143,6 +143,52 @@ export async function cityState(): Promise<CityStats> {
 /* Group ------------------------------------------------------------------- */
 
 const GROUP_KEY_PREFIX = 'hz-group-token:';
+/* Which member this browser answers as, so the lobby can say "you" and offer an edit. */
+const GROUP_SLOT_PREFIX = 'hz-group-slot:';
+
+function keepGroupSession(groupId: string, token: string, slot: number) {
+  try {
+    window.localStorage.setItem(GROUP_KEY_PREFIX + groupId, token);
+    window.localStorage.setItem(GROUP_SLOT_PREFIX + groupId, String(slot));
+  } catch {
+    /* private mode: the session lasts as long as the tab */
+  }
+}
+
+export function groupSlot(groupId: string): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const v = window.localStorage.getItem(GROUP_SLOT_PREFIX + groupId);
+    return v ? Number(v) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Your own saved answer, to prefill the form when editing. Nobody else's is reachable. */
+export async function myGroupConstraint(groupId: string): Promise<GroupConstraint | null> {
+  const r = await call<{ submitted: boolean; budget_pkr?: number | null; max_travel_min?: number | null;
+                         diet?: string[] | null; mood?: string | null }>(
+    `/v1/groups/${groupId}/constraint`, { nullable: true, bearer: groupToken(groupId) },
+  );
+  if (!r?.submitted) return null;
+  return {
+    budget: r.budget_pkr ?? 2400,
+    maxTravel: r.max_travel_min ?? 25,
+    mood: r.mood ?? 'anything',
+    diet: r.diet ?? [],
+  } as GroupConstraint;
+}
+
+/** Tap your own name in the group. The answer stays private; joining is not. */
+export async function joinGroup(groupId: string, slot: number) {
+  const r = await call<{ access_token: string; slot: number; group_id: string; name: string }>(
+    `/v1/groups/${groupId}/join`,
+    { method: 'POST', body: { slot }, bearer: null },
+  );
+  if (r) keepGroupSession(r.group_id, r.access_token, r.slot);
+  return r;
+}
 
 /** Anonymous. Requiring an account to organise dinner for six would put a sign-up between
  *  five other people and the thing they are trying to do — so the API does not, and neither
@@ -167,11 +213,7 @@ export async function exchangeGroupInvite(groupId: string, inviteToken: string) 
     { method: 'POST', body: { token: inviteToken }, nullable: true },
   );
   if (!r) return null;
-  try {
-    window.localStorage.setItem(GROUP_KEY_PREFIX + r.group_id, r.access_token);
-  } catch {
-    /* private mode: the session lasts as long as the tab */
-  }
+  keepGroupSession(r.group_id, r.access_token, r.slot);
   return r;
 }
 
