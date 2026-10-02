@@ -10,10 +10,10 @@ import { useLiveState } from '@/lib/hooks/useLiveState';
 import { ago } from '@/lib/format';
 import { Icon } from '@/components/primitives/Icon';
 import { Label } from '@/components/primitives/Label';
-import { staffSend, staffToday, issueDevice, search } from '@/lib/api';
+import { staffSend, staffToday, issueDevice, findVenuesByName } from '@/lib/api';
 import { EMPTY_STAFF_TODAY } from '@/lib/api/rest';
 import { currentPosition } from '@/lib/geo';
-import { parseQuery } from '@/lib/search';
+
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import { useAsync } from '@/lib/hooks/useAsync';
@@ -71,14 +71,10 @@ function EnrolScreen({ onEnrol }: { onEnrol: (token: string) => void }) {
     if (!query.trim()) return;
     setError(null);
     try {
-      const r = await search({ ...parseQuery(query), maxTravel: 90 });
-      setVenues(
-        r.results.slice(0, 8).map(x => ({
-          id: (x.venue.venueId ?? x.venue.id) as string,
-          name: x.venue.name,
-          area: x.venue.area,
-        })),
-      );
+      // By name: enrolling a tablet means *this* restaurant, not any of its cuisine.
+      const found = await findVenuesByName(query.trim());
+      setVenues(found);
+      if (!found.length) setError('No venue with that name. Try fewer words, e.g. just "naseeb".');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed.');
     }

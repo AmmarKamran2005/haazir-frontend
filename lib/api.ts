@@ -14,6 +14,7 @@ import { USE_REAL_API } from './api/config';
 import * as rest from './api/rest';
 import * as mock from './mock/handlers';
 import * as mockHub from './mock/sseHub';
+import { HZ } from './hz';
 import type { ParsedQuery } from './search';
 import type { GroupConstraint, CityStats } from './hz/types';
 import type { AuthUser } from './mock/handlers';
@@ -66,6 +67,14 @@ export const groupStatus = (groupId: string) =>
   USE_REAL_API ? rest.groupStatus(groupId) : ready(mock.groupStatus(groupId));
 
 /* The mock has one demo group and no auth, so joining is a no-op there. */
+export const findVenuesByName = (q: string) =>
+  USE_REAL_API
+    ? rest.findVenuesByName(q)
+    : ready((HZ.venues as { id: string; name: string; area: string }[])
+        .filter(v => v.name.toLowerCase().includes(q.toLowerCase()))
+        .slice(0, 8)
+        .map(v => ({ id: v.id, slug: v.id, name: v.name, area: v.area })));
+
 export const joinGroup = (groupId: string, slot: number) =>
   USE_REAL_API ? rest.joinGroup(groupId, slot) : ready({ access_token: '', slot, group_id: groupId, name: '' });
 

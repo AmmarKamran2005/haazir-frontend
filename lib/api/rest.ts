@@ -335,6 +335,14 @@ export async function solveGroupFor(groupId: string): Promise<GroupSolveResult |
   } as unknown as GroupSolveResult;
 }
 
+/** Venues by name, for pickers that need one particular restaurant. */
+export async function findVenuesByName(q: string) {
+  const r = await call<{ results: { id: string; slug: string; name: string; area: string | null }[] }>(
+    `/v1/venues?q=${encodeURIComponent(q)}&limit=8`,
+  );
+  return (r?.results ?? []).map(v => ({ id: v.id, slug: v.slug, name: v.name, area: v.area ?? '' }));
+}
+
 /* Staff ------------------------------------------------------------------- */
 
 export async function staffSend(
