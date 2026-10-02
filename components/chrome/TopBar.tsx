@@ -11,6 +11,7 @@ import { useI18n } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/i18n/en';
 import { useDirector } from './Director';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { USE_REAL_API } from '@/lib/api/config';
 
 const SURFACES: { id: Surface; key: TranslationKey; icon: string }[] = [
   { id: 'diner',   key: 'nav.diner',   icon: 'search' },
@@ -63,36 +64,43 @@ export function TopBar() {
         ))}
       </nav>
       <div className="topbar__right">
-        <div className="clock">
-          <button
-            className="iconbtn clock__play"
-            aria-label={(engine.running ? 'Pause' : 'Play') + ' the demo clock'}
-            onClick={() => { engine.running = !engine.running; bump(); }}
-          >
-            <Icon name={engine.running ? 'pause' : 'play'} />
-          </button>
-          <span className="clock__d">{engine.dayName().slice(0, 3)}</span>
-          {/* The demo clock advances, so the time rendered on the server is not the time
-              rendered on the client a moment later, and React reports that as a hydration
-              failure on every page load. The difference is intended: this is a clock. */}
-          <span className="clock__t" suppressHydrationWarning>{engine.timeString()}</span>
-          <button
-            className="clock__speed"
-            data-fast={engine.speed > 1 ? 1 : 0}
-            aria-label={`Clock speed, currently ${engine.speed} times`}
-            onClick={() => { engine.speed = engine.speed === 1 ? 8 : engine.speed === 8 ? 60 : 1; bump(); }}
-          >
-            {engine.speed}×
-          </button>
-        </div>
-        <button
-          className="iconbtn"
-          aria-label={directorOn ? 'Exit the guided demo' : 'Run the guided demo'}
-          aria-pressed={directorOn}
-          onClick={toggleDirector}
-        >
-          <Icon name={directorOn ? 'x' : 'play'} />
-        </button>
+        {/* The demo clock and the guided tour drive the offline simulator. Against the real
+            API they do nothing to real data, and the tour walks into pages that only exist
+            in the mock, so they are shown only there. */}
+        {!USE_REAL_API && (
+          <>
+            <div className="clock">
+              <button
+                className="iconbtn clock__play"
+                aria-label={(engine.running ? 'Pause' : 'Play') + ' the demo clock'}
+                onClick={() => { engine.running = !engine.running; bump(); }}
+              >
+                <Icon name={engine.running ? 'pause' : 'play'} />
+              </button>
+              <span className="clock__d">{engine.dayName().slice(0, 3)}</span>
+              {/* The demo clock advances, so the time rendered on the server is not the time
+                  rendered on the client a moment later, and React reports that as a hydration
+                  failure on every page load. The difference is intended: this is a clock. */}
+              <span className="clock__t" suppressHydrationWarning>{engine.timeString()}</span>
+              <button
+                className="clock__speed"
+                data-fast={engine.speed > 1 ? 1 : 0}
+                aria-label={`Clock speed, currently ${engine.speed} times`}
+                onClick={() => { engine.speed = engine.speed === 1 ? 8 : engine.speed === 8 ? 60 : 1; bump(); }}
+              >
+                {engine.speed}×
+              </button>
+            </div>
+            <button
+              className="iconbtn"
+              aria-label={directorOn ? 'Exit the guided demo' : 'Run the guided demo'}
+              aria-pressed={directorOn}
+              onClick={toggleDirector}
+            >
+              <Icon name={directorOn ? 'x' : 'play'} />
+            </button>
+          </>
+        )}
         <button
           className="iconbtn lang-toggle"
           aria-label={`Switch to ${locale === 'en' ? 'Urdu' : 'English'}`}

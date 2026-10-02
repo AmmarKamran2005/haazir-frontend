@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { HZ, engine } from '@/lib/hz';
 import { surfaceFromPath, DEMO_GROUP_ID } from '@/lib/surface';
 import { useClock } from '@/lib/hooks/useDemoClock';
-import { cityState } from '@/lib/api';
+import { cityState, USE_REAL_API } from '@/lib/api';
 import { useAsync } from '@/lib/hooks/useAsync';
 
 type NavItem = [key: string, label: string, href: string];
@@ -22,18 +22,33 @@ export function Rail() {
   const sealed = HZ.venues.filter((v: any) =>
     v.trust.regulatory.some((r: any) => r.type === 'sealed')).length;
 
-  const g = `/g/${DEMO_GROUP_ID}`;
+  /* Mock: the one demo group. Real API: whichever group the URL is on, if any, plus a way to
+     make a new one — the demo id is not a group the server knows. */
+  const inGroup = pathname.match(/^\/g\/([^/]+)/)?.[1];
+  const g = `/g/${USE_REAL_API ? inGroup ?? '' : DEMO_GROUP_ID}`;
+  const groupNav: NavItem[] = USE_REAL_API
+    ? [
+        ['new', 'New group', '/g'],
+        ...(inGroup
+          ? ([
+              ['lobby', 'Group lobby', g],
+              ['private', 'Private constraints', `${g}/me`],
+              ['solved', 'Fair solution', `${g}/solved`],
+            ] as NavItem[])
+          : []),
+      ]
+    : [
+        ['lobby', 'Group lobby', g],
+        ['private', 'Private constraints', `${g}/me`],
+        ['solved', 'Fair solution', `${g}/solved`],
+      ];
   const nav: NavItem[] = {
     diner: [
       ['home', 'Ask', '/'],
       ['results', 'Ranked results', '/results'],
       ['venue', 'Venue truth card', '/v/kolachi'],
     ],
-    group: [
-      ['lobby', 'Group lobby', g],
-      ['private', 'Private constraints', `${g}/me`],
-      ['solved', 'Fair solution', `${g}/solved`],
-    ],
+    group: groupNav,
     staff: [
       ['console', 'One-tap state', '/staff'],
       ['payback', 'What the venue gets', '/staff'],
@@ -55,6 +70,7 @@ export function Rail() {
       if (key === 'venue') return pathname.startsWith('/v/');
     }
     if (surface === 'group') {
+      if (key === 'new') return pathname === '/g';
       if (key === 'lobby') return pathname === g;
       if (key === 'private') return pathname === `${g}/me`;
       if (key === 'solved') return pathname === `${g}/solved`;

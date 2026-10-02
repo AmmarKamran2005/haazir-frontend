@@ -17,7 +17,7 @@ import type {
   PartnerPrices,
   FuseResult,
 } from '@/lib/hz/types';
-import { DEFAULT_ORIGIN } from './config';
+import { ApiError, DEFAULT_ORIGIN } from './config';
 import { call, getAccessToken, setAccessToken, setDeviceToken } from './http';
 import type { AuthSession, AuthUser } from '@/lib/mock/handlers';
 import {
@@ -185,20 +185,22 @@ export function groupToken(groupId: string): string | null {
 }
 
 export async function groupStatus(groupId: string): Promise<GroupStatusResponse> {
+  /* The API names these `party_size` and `slot`. This used to read `total` and `id`, which do
+     not exist: the lobby counted "N of undefined" and every member tile shared a key. */
   const g = await call<{
     title: string;
     responded: number;
-    total: number;
-    members: { id: string; name: string; responded: boolean }[];
+    party_size: number;
+    members: { slot: number; name: string; responded: boolean }[];
   }>('/v1/groups/' + groupId, { nullable: true, bearer: groupToken(groupId) });
 
   if (!g) return { title: '', responded: 0, total: 0, members: [] };
   return {
     title: g.title,
     responded: g.responded,
-    total: g.total,
+    total: g.party_size ?? g.members.length,
     members: g.members.map((m) => ({
-      id: m.id,
+      id: String(m.slot),
       name: m.name,
       nameUr: '',
       responded: m.responded,
@@ -251,6 +253,7 @@ function solveCandidate(c: SolveCandidateRaw) {
 export async function solveGroupFor(groupId: string): Promise<GroupSolveResult | null> {
   const r = await call<{
     solved: boolean;
+    detail?: string;
     best: SolveCandidateRaw | null;
     runner_up: SolveCandidateRaw | null;
     alternatives: SolveCandidateRaw[];
@@ -261,6 +264,12 @@ export async function solveGroupFor(groupId: string): Promise<GroupSolveResult |
     nullable: true,
     bearer: groupToken(groupId),
   });
+  /* `solved: false` is a 200 with a reason ("No venue satisfies everyone…"). Returning null
+     here made the page say "Submit your constraints first" whatever the reason was, which is
+     wrong when everyone has answered and it is the answers that cannot be met together. */
+  if (r && !r.best && r.detail) {
+    throw new ApiError(409, `/v1/groups/${groupId}/solve`, `POST /v1/groups/${groupId}/solve → 409: ${r.detail}`);
+  }
   if (!r?.best) return null;
 
   const status = await groupStatus(groupId);

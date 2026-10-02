@@ -297,18 +297,23 @@ function VenuePage() {
         <FactsGrid venue={venue} />
       </section>
 
-      <section className="sec">
-        <div className="sec__h"><Label>{t('venue.twins')}</Label></div>
-        <p className="sec__sub" style={{ marginBottom: 0 }}>
-          <b style={{ color: 'var(--ink)' }}>
-            {12 + (venue.name.length % 9)} people
-          </b> with a 90%+ palate match to you rate this{' '}
-          {Math.min(9.6, venue.verifiedRating * 2 + 0.4).toFixed(1)}. The general public rates it{' '}
-          {(venue.rating * 2).toFixed(1)}. Your palate is weighted toward spice (
-          {Math.round(HZ.user.palate.spice * 100)}%) and richness (
-          {Math.round(HZ.user.palate.richness * 100)}%).
-        </p>
-      </section>
+      {/* Taste twins is simulator copy: the count comes from the venue name's length and the
+          ratings from seeded values. There is no palate matching behind it, so it is shown
+          only on the offline mock where everything is labelled as simulated. */}
+      {!USE_REAL_API && (
+        <section className="sec">
+          <div className="sec__h"><Label>{t('venue.twins')}</Label></div>
+          <p className="sec__sub" style={{ marginBottom: 0 }}>
+            <b style={{ color: 'var(--ink)' }}>
+              {12 + (venue.name.length % 9)} people
+            </b> with a 90%+ palate match to you rate this{' '}
+            {Math.min(9.6, venue.verifiedRating * 2 + 0.4).toFixed(1)}. The general public rates it{' '}
+            {(venue.rating * 2).toFixed(1)}. Your palate is weighted toward spice (
+            {Math.round(HZ.user.palate.spice * 100)}%) and richness (
+            {Math.round(HZ.user.palate.richness * 100)}%).
+          </p>
+        </section>
+      )}
 
       <div style={{ padding: '0 var(--sp-4) var(--sp-6)', display: 'flex', gap: 8 }}>
         <button
